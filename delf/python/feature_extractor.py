@@ -206,13 +206,22 @@ def ExtractKeypointDescriptor(image, layer_name, image_scales, iou,
        output_scales,
        output_scores,
        reuse=False)
+  
   # Original size attention
-  orginal_size_attention, _ = model_fn(
-                image_tensor, normalized_image=True, reuse=True)
+  
+  # feature_extractor.py의 BuildModel를 호출한다. > delf_v1.DelfV1 call > 
+  #      attention, feature_map를 동시에 호출한다. 여기서는 attention(Attention score 또는 attention weight)만 사용.
+  #      orginal_size_attention = attention(Attention score 또는 attention weight)
+  #           > softplus에서 나온 결과
+  orginal_size_attention, _ = model_fn(image_tensor, normalized_image=True, reuse=True)
+  
+  # tf.minimum > Returns the min of x and y (i.e. x < y ? x : y) element-wise. > 255보다 크면 255로 설정.
+  #   참고) tf.maximum > Returns the max of x and y (i.e. x > y ? x : y) element-wise.
+  # 의문) orginal_size_attention 값은 0~1사이값들이 아닌가??? 미리 255를 곱해야하는것이 아닌가? > 이 루틴이 있나?  
   orginal_size_attention = tf.minimum(orginal_size_attention, 255)
   orginal_size_attention = tf.image.resize_bilinear(orginal_size_attention, tf.gather(tf.shape(image), [0, 1]))
       
-  i = tf.constant(1, dtype=tf.int32)
+  i          = tf.constant(1, dtype=tf.int32)
   num_scales = tf.shape(image_scales)[0]
   keep_going = lambda j, boxes, features, scales, scores: tf.less(j, num_scales)
 
